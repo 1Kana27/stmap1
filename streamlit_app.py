@@ -109,4 +109,48 @@ st.divider()
 st.subheader("地図上での位置確認")
 
 # 列名を明示的に指定してエラーを回避
-st.map(df, latitude='Latitude', longitude='Longitude')
+# st.map(df, latitude='Latitude', longitude='Longitude')
+
+
+
+import pydeck as pdk
+
+# --- DeckGL による 3D 地図表示 ---
+st.divider()
+st.subheader("3D カラムマップ (気温を高さで表現)")
+
+# 気温に基づいて柱の高さを計算（例：1度 = 2000メートル）
+df['temp_height'] = df['Temperature'] * 2000 
+
+# 地図の設定
+view_state = pdk.ViewState(
+    latitude=32.7,
+    longitude=130.5,
+    zoom=6,
+    pitch=45, # 傾き
+)
+
+# 3Dカラムレイヤーの設定
+layer = pdk.Layer(
+    "ColumnLayer",
+    data=df,
+    get_position='[Longitude, Latitude]',
+    get_elevation='temp_height', # 高さ
+    radius=10000,                # 柱の太さ
+    get_fill_color='[255, (255 - Temperature * 5), 0, 150]', # 温度が高いほど赤く
+    pickable=True,
+    auto_highlight=True,
+)
+
+# ツールチップ（ホバー時の表示）
+tooltip = {
+    "html": "<b>{City}</b><br>気温: {Temperature}°C",
+    "style": {"color": "white"}
+}
+
+# 描画
+st.pydeck_chart(pdk.Deck(
+    layers=[layer],
+    initial_view_state=view_state,
+    tooltip=tooltip
+))
